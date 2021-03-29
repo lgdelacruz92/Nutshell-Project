@@ -4,12 +4,9 @@ void yyerror (char *s);
 int yylex();
 %}
 %%
-"print"             { return print; }
-[0-9]+              {
-                            yylval.num = atoi(yytext);
-                            return number;
-                         }
-[ \t\n]                 ;
-[;]                     { return yytext[0];}
+"ls"                    { return list_directory; }
+[a-zA-Z\-;]             { return yytext[0];}
+\n                      { return RETURN; }
+
 %%
 int yywrap (void) {return 1;}
