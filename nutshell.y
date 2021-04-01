@@ -69,16 +69,14 @@ arguments : ARG                                         {$$ = make_node($1);}
 int main (void) {
 
     int CMD;
-    struct Node* top = make_node("hello");
-    char **new_args =get_args(1,top);
-    //while(1) {
-        // Prints the '%:'
-       // print_prompt();
+    while(1) {
+       print_prompt();
 
-       // char buff[BUFF_SIZE]; fgets(buff,BUFF_SIZE,stdin); 
-       // // Get command and execute or error out
-       // parse_string(buff);     
-    //}
+       char buff[BUFF_SIZE]; fgets(buff,BUFF_SIZE,stdin); 
+
+        // Get command and execute or error out
+       parse_string(buff);     
+    }
     return 0;
 }
 
@@ -248,13 +246,13 @@ char** get_args(int node_count, struct Node* args) {
 
     char** command_args;
     command_args= malloc((node_count)*sizeof(char*));;
-    printf("Hello\n");
     struct Node* c = args;
 
     int index = 0;
     while (c != NULL) {
         char *cp = strdup(c->val);
         command_args[index] = cp;
+        c = c->next;
         index++;
     }
     return command_args;
