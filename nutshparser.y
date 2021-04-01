@@ -11,21 +11,24 @@
 int yylex();
 int yyerror(char *s);
 int runCD(char* arg);
-int runListDir();
+int runListDir(char* args, char* file);
 int runSetAlias(char *name, char *word);
 %}
 
 %union {char *string;}
 
 %start cmd_line
-%token <string> BYE CD STRING ALIAS LIST_DIR END
+%token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG END
 
 %%
 cmd_line    :
 	BYE END 		                {exit(1); return 1; }
 	| CD STRING END        			{runCD($2); return 1;}
 	| ALIAS STRING STRING END		{runSetAlias($2, $3); return 1;}
-    | LIST_DIR END                  {runListDir(); return 1;}
+    | LIST_DIR END                  {runListDir(NULL,"."); return 1;}
+    | LIST_DIR ARG END              {runListDir($2,"."); return 1;} 
+    | LIST_DIR FILE_ARG END             {runListDir(NULL,$2); return 1;}
+    | LIST_DIR ARG FILE_ARG END         {runListDir($2,$3); return 1;}
 
 %%
 
@@ -95,8 +98,11 @@ int runSetAlias(char *name, char *word) {
 	return 1;
 }
 
-int runListDir() {
-       // Initialize pipes
+int runListDir(char* args, char* file) {
+
+    printf("arguments: %s\n", args);
+    printf("file: %s\n", file);
+    // Initialize pipes
     int stdout_pipe[2];
     int stderr_pipe[2];
 
@@ -120,10 +126,15 @@ int runListDir() {
 
         // Execute 'ls' command
         char *bin_path = "/bin/ls";
-        char *arg_tokens[] = {bin_path, (char*)NULL};
-
-        execv(bin_path, arg_tokens);
-
+        
+        if (args != NULL) {
+            char *arg_tokens[] = {bin_path, args, file, (char*)NULL};
+            execv(bin_path, arg_tokens);
+        } 
+        else {
+            char *arg_tokens[] = {bin_path, file, (char*)NULL};
+            execv(bin_path, arg_tokens);
+        }
     
         // Close used pipes
         close(stdout_pipe[1]);
