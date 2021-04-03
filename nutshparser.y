@@ -15,20 +15,41 @@ int runListDir(char* args, char* file);
 int runSetAlias(char *name, char *word);
 %}
 
-%union {char *string;}
+%union {
+    char *string;
+    struct basic_cmd_list_struct* cmd_list;
+    struct basic_cmd_struct* bcs;
+    struct linked_list* ll;
+}
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG END
+%type <cmd_list> cmd_line
+%type <bcs> basic_cmd 
+%type <ll> arguments files
 
 %%
 cmd_line    :
 	BYE END 		                {exit(1); return 1; }
 	| CD STRING END        			{runCD($2); return 1;}
 	| ALIAS STRING STRING END		{runSetAlias($2, $3); return 1;}
-    | LIST_DIR END                  {runListDir(NULL,"."); return 1;}
-    | LIST_DIR ARG END              {runListDir($2,"."); return 1;} 
-    | LIST_DIR FILE_ARG END             {runListDir(NULL,$2); return 1;}
-    | LIST_DIR ARG FILE_ARG END         {runListDir($2,$3); return 1;}
+    | cmd_list END                  {runCmdList($1); return 1;}
+
+cmd_list : basic_cmd PIPE cmd_line  { 
+                                        struct basic_cmd_linkedlist* top = make_basic_cmd_linkedlist($1);
+                                        top->make_basic_cmd_linkedlist($2);
+                                        $$ = top;
+                                    }
+
+basic_cmd :                         { $$ = NULL; }
+          | STRING arguments        { $$ = make_basic_cmd($1, $2, $3); }
+
+arguments   :                       { $$ = NULL; }
+            | STRING arguments      { 
+                                        struct linked_list* top = make_linkedlist($1);
+                                        top->next = make_linkedlist($2);
+                                        $$ = top;
+                                    } 
 
 %%
 
