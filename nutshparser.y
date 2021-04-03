@@ -7,47 +7,52 @@
 #include <unistd.h>
 #include <string.h>
 #include "global.h"
+#include "methods.h"
 
 int yylex();
 int yyerror(char *s);
 int runCD(char* arg);
 int runListDir(char* args, char* file);
 int runSetAlias(char *name, char *word);
+int runCmdList(struct basic_cmd_linkedlist* top);
 %}
 
 %union {
     char *string;
-    struct basic_cmd_list_struct* cmd_list;
+    struct basic_cmd_linkedlist* cmd_list;
     struct basic_cmd_struct* bcs;
     struct linked_list* ll;
+    int single_token;
 }
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG END
-%type <cmd_list> cmd_line
-%type <bcs> basic_cmd 
-%type <ll> arguments files
+%token <single_token> PIPE
+%type <cmd_list> pipe_list 
+%type <bcs> basic_cmd
+%type <ll> arguments
 
 %%
 cmd_line    :
 	BYE END 		                {exit(1); return 1; }
 	| CD STRING END        			{runCD($2); return 1;}
 	| ALIAS STRING STRING END		{runSetAlias($2, $3); return 1;}
-    | cmd_list END                  {runCmdList($1); return 1;}
+    | pipe_list END                  {runCmdList($1); return 1;}
 
-cmd_list : basic_cmd PIPE cmd_line  { 
+pipe_list : basic_cmd               {$$ = make_basic_cmd_linkedlist($1);}  
+          | basic_cmd PIPE pipe_list  { 
                                         struct basic_cmd_linkedlist* top = make_basic_cmd_linkedlist($1);
-                                        top->make_basic_cmd_linkedlist($2);
+                                        top->next = $3;
                                         $$ = top;
                                     }
 
 basic_cmd :                         { $$ = NULL; }
-          | STRING arguments        { $$ = make_basic_cmd($1, $2, $3); }
+          | STRING arguments        { $$ = make_basic_cmd($1, $2); }
 
 arguments   :                       { $$ = NULL; }
             | STRING arguments      { 
                                         struct linked_list* top = make_linkedlist($1);
-                                        top->next = make_linkedlist($2);
+                                        top->next = $2;
                                         $$ = top;
                                     } 
 
@@ -195,4 +200,9 @@ int runListDir(char* args, char* file) {
         close(stderr_pipe[0]);
         return 0;
     }  
+}
+
+int runCmdList(struct basic_cmd_linkedlist* top) {
+    printf("linked list stuff\n");
+    return 0;
 }

@@ -41,9 +41,7 @@ ANYCHAR            [)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/*_
 bye                   { return BYE; }
 cd		              { return CD;}
 alias		          { return ALIAS; }
-ls                    { return LIST_DIR; }
--[a-zA-Z]+            { yylval.string=strdup(yytext); return ARG; }
-[a-zA-Z_/][/a-zA-Z0-9]* { yylval.string=strdup(yytext); return FILE_ARG; }
+\|                    { return PIPE; }
 "\n"		          { return END; }
 [\"]                  { BEGIN(string_condition); }
 {CHAR}+               {if(ifAlias(yytext)) {
