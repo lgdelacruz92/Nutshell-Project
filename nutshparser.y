@@ -203,6 +203,24 @@ int runListDir(char* args, char* file) {
 }
 
 int runCmdList(struct basic_cmd_linkedlist* top) {
-    printf("linked list stuff\n");
+    int num_nodes = count_bcll_nodes(top);
+    struct cmd_struct cmds[num_nodes];
+    struct basic_cmd_linkedlist * c = top;
+    int i = 0;
+    while (c != NULL) {
+        char **cmd = format_to_char_ptrptr(c);
+        cmds[i].num_args = c->bcs->num_cmd_args;
+        cmds[i].val = cmd;
+        i++;
+        c = c->next;
+    }
+        
+    execute(cmds, num_nodes);
+    
+    for (int i = 0; i < num_nodes; i++) {
+        for (int j = 0; j < cmds[i].num_args; j++) {
+            free(cmds[i].val[j]);
+        }
+    } 
     return 0;
 }

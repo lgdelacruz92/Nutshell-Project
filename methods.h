@@ -9,7 +9,7 @@
 #define methods_h
 
 #include <stdio.h>
-
+#define STRING_BUFF 1024
 struct basic_cmd_struct {
     int num_cmd_args;
     char **cmd_args;
@@ -30,6 +30,11 @@ struct basic_cmd_linkedlist {
     struct basic_cmd_linkedlist* next;
 };
 
+struct cmd_struct {
+    int num_args;
+    char **val;
+};
+
 char* concatenate(char* s1, char* s2, char* s3);
 struct basic_cmd_struct* make_basic_cmd_struct(int num_args, char **arguments);
 struct basic_cmd_list_struct* make_basic_cmd_list_struct(int num_bcs, struct basic_cmd_struct **bcs_arr);
@@ -37,7 +42,10 @@ struct linked_list* make_linkedlist(const char *val);
 struct basic_cmd_struct* make_basic_cmd(char* cmd, struct linked_list* arguments);
 struct basic_cmd_linkedlist* make_basic_cmd_linkedlist(struct basic_cmd_struct* top);
 int count_nodes(struct linked_list* top);
+int count_bcll_nodes(struct basic_cmd_linkedlist* top);
+char **format_to_char_ptrptr(struct basic_cmd_linkedlist* top);
 void free_linked_list(struct linked_list* top);
 void free_bcs_linked_list(struct basic_cmd_linkedlist* top);
+void execute(struct cmd_struct* cmds, int num_nodes);
 
 #endif /* methods_h */
