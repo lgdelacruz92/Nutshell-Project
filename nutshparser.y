@@ -12,7 +12,6 @@
 int yylex();
 int yyerror(char *s);
 int runCD(char* arg);
-int runListDir(char* args, char* file);
 int runSetAlias(char *name, char *word);
 int runCmdList(struct basic_cmd_linkedlist* top);
 %}
@@ -124,83 +123,6 @@ int runSetAlias(char *name, char *word) {
 	return 1;
 }
 
-int runListDir(char* args, char* file) {
-
-    printf("arguments: %s\n", args);
-    printf("file: %s\n", file);
-    // Initialize pipes
-    int stdout_pipe[2];
-    int stderr_pipe[2];
-
-    // Pipe init error check
-    if (pipe(stdout_pipe) < 0 || pipe(stderr_pipe) < 0) {
-        fprintf(stderr, "List current dir pipe initialization failed");
-        return -1;
-    }
-
-    // Fork 'ls' command
-    int child_id= fork();
-    if (child_id == 0) {
-
-        // Close pipes that are not needed
-        close(stdout_pipe[0]);
-        close(stderr_pipe[0]);
-
-        // Redirect outputs to pipes
-        dup2(stdout_pipe[1], STDOUT_FILENO);
-        dup2(stderr_pipe[1], STDERR_FILENO);
-
-        // Execute 'ls' command
-        char *bin_path = "/bin/ls";
-        
-        if (args != NULL) {
-            char *arg_tokens[] = {bin_path, args, file, (char*)NULL};
-            execv(bin_path, arg_tokens);
-        } 
-        else {
-            char *arg_tokens[] = {bin_path, file, (char*)NULL};
-            execv(bin_path, arg_tokens);
-        }
-    
-        // Close used pipes
-        close(stdout_pipe[1]);
-        close(stderr_pipe[1]);
-        
-        return 0;
-    }
-    else {
-        
-        // Close pipes that are not needed
-        close(stdout_pipe[1]);
-        close(stderr_pipe[1]);
-        
-        // Check for stderr
-        char c;
-        if (read(stderr_pipe[0],&c,1) != 0) {
-
-            // Output to user
-            printf("%c",c);
-            char a;
-            while ((c = read(stderr_pipe[0],&a,1)) != 0) {
-                printf("%c",a);
-            }
-            printf("\n");
-        } 
-        else {
-            char a;
-            while ((c = read(stdout_pipe[0],&a,1)) != 0) {
-                printf("%c",a);
-            }
-            printf("\n");
-        }
-    
-
-        // Close used pipes
-        close(stdout_pipe[0]);
-        close(stderr_pipe[0]);
-        return 0;
-    }  
-}
 
 int runCmdList(struct basic_cmd_linkedlist* top) {
     int num_nodes = count_bcll_nodes(top);
