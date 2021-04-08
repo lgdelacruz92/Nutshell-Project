@@ -26,7 +26,7 @@ int main()
     strcpy(varTable.word[varIndex], "nutshell");
     varIndex++;
     strcpy(varTable.var[varIndex], "PATH");
-    strcpy(varTable.word[varIndex], ".:/bin");
+    strcpy(varTable.word[varIndex], ".:/bin:/usr/bin");
     varIndex++;
 
     strcpy(aliasTable.name[aliasIndex], ".");

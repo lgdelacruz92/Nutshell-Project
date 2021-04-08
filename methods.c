@@ -4,6 +4,7 @@
 //
 //  Created by Dela Cruz, Lester on 4/3/21.
 //
+#define _GNU_SOURCE
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -25,6 +26,17 @@ char *concatenate(char* s1, char* s2, char* s3) {
     strncpy(command_line + t1 + t2 + 2, s3, t3);
     command_line[total-1] = '\0';
     return command_line;
+}
+
+char* append_str(char* s1, char *s2) {
+    int cmds_size = (int)strlen(s1);
+    int path_size = (int)strlen(s1);
+    char *new_cmd = malloc((cmds_size + path_size + 2) * sizeof(char));
+    memcpy(new_cmd, s1, cmds_size);
+    new_cmd[cmds_size] = '/';
+    memcpy(new_cmd + cmds_size+1, s2, path_size);
+    new_cmd[cmds_size + path_size + 1] = '\0';
+    return new_cmd;
 }
 
 struct basic_cmd_struct* make_basic_cmd_struct(int num_args, char **arguments) {
@@ -129,8 +141,7 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top) {
     }
 }
 
-void execute(struct cmd_struct* cmds, int num_nodes) {
-    printf("Num nodes %d\n", num_nodes);
+int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
     int num_process = num_nodes;
     int num_pipes = num_process-1;
     int p[num_pipes][2];
@@ -141,10 +152,13 @@ void execute(struct cmd_struct* cmds, int num_nodes) {
             exit(EXIT_FAILURE);
         }
     }
+    
+    struct path_vars* paths = parse_path(path);
 
     for (int i = 0; i < num_process; i++) {
         int child = fork();
         if (child == 0) {
+            
             if (i == 0) {
                 dup2(p[i][1], STDOUT_FILENO);
             }
@@ -160,14 +174,83 @@ void execute(struct cmd_struct* cmds, int num_nodes) {
                 close(p[j][0]);
                 close(p[j][1]);
             }
-            execv(cmds[i].val[0], cmds[i].val);
+            
+            for (int j = 0; j < paths->num_paths; j++) {
+                char *new_cmd = append_str(paths->paths[j], cmds[i].val[0]);
+                execv(new_cmd, cmds[i].val);
+            }
+            
+            dup2(1, STDOUT_FILENO);
+            printf("Command not found: %s\n", cmds[i].val[0]);
+            close(STDIN_FILENO);
+            close(STDOUT_FILENO);
+            break;
         }
     }
     for (int j = 0; j < num_pipes; j++) {
         close(p[j][0]);
         close(p[j][1]);
     }
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < num_process; i++) {
         wait(NULL);
     }
+    return 0;
+}
+
+/**
+    Method that parses the path variable separated by ':'
+        @return {struct path_vars*}
+ */
+struct path_vars* parse_path(char* path) {
+    struct path_vars *result = malloc(sizeof(struct path_vars));
+    
+    // Calculate the number paths to allocate
+    char *c = path;
+    int num_paths = 1;
+    while (*c != '\0') {
+        if (*c == ':') {
+            num_paths++;
+        }
+        c++;
+    }
+    
+    // Allocate the path array pointers
+    char **path_arr = malloc(num_paths * sizeof(char*));
+    for (int i = 0; i < num_paths; i++) {
+        path_arr[i] = malloc(STRING_BUFF * sizeof(char));
+    }
+    
+    // Iterate through 'path' and save substrings
+    char *p1 = path;
+    char *p2 = path;
+    int j = 0;
+    while (*p1 != '\0') {
+        while (*p2 != '\0' && *p2 != ':') {
+            p2++;
+        }
+        memcpy(path_arr[j], p1, p2-p1);
+        path_arr[j][p2-p1] = '\0';
+        j++;
+        if (*p2 == '\0') {
+            break;
+        }
+
+        p1 = p2 + 1;
+        p2++;
+    }
+    result->num_paths = num_paths;
+    result->paths = path_arr;
+    return result;
+}
+
+/**
+ Method that frees a 'struct path_var' memory
+ */
+void free_path_vars(struct path_vars* p) {
+   // First free its paths
+    for (int i = 0; i < p->num_paths; i++) {
+        free(p->paths[i]);
+    }
+    // Then free it's struct
+    free(p);
 }

@@ -7,7 +7,6 @@
 
 #ifndef methods_h
 #define methods_h
-
 #include <stdio.h>
 #define STRING_BUFF 1024
 struct basic_cmd_struct {
@@ -35,7 +34,13 @@ struct cmd_struct {
     char **val;
 };
 
+struct path_vars {
+    int num_paths;
+    char **paths;
+};
+
 char* concatenate(char* s1, char* s2, char* s3);
+char* append_str(char* s1, char *s2);
 struct basic_cmd_struct* make_basic_cmd_struct(int num_args, char **arguments);
 struct basic_cmd_list_struct* make_basic_cmd_list_struct(int num_bcs, struct basic_cmd_struct **bcs_arr);
 struct linked_list* make_linkedlist(const char *val);
@@ -46,6 +51,8 @@ int count_bcll_nodes(struct basic_cmd_linkedlist* top);
 char **format_to_char_ptrptr(struct basic_cmd_linkedlist* top);
 void free_linked_list(struct linked_list* top);
 void free_bcs_linked_list(struct basic_cmd_linkedlist* top);
-void execute(struct cmd_struct* cmds, int num_nodes);
+int execute(char* path, struct cmd_struct* cmds, int num_nodes);
+struct path_vars* parse_path(char* path);
+void free_path_vars(struct path_vars* p);
 
 #endif /* methods_h */

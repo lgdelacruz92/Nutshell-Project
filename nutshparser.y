@@ -2,6 +2,8 @@
 // This is ONLY a demo micro-shell whose purpose is to illustrate the need for and how to handle nested alias substitutions and Flex start conditions.
 // This is to help students learn these specific capabilities, the code is by far not a complete nutshell by any means.
 // Only "alias name word", "cd word", and "bye" run. 
+
+#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -11,7 +13,10 @@
 
 int yylex();
 int yyerror(char *s);
+char* get_path();
+int get_var_index(const char* var);
 int runCD(char* arg);
+int runSetEnv(const char* var, const char* val);
 int runSetAlias(char *name, char *word);
 int runCmdList(struct basic_cmd_linkedlist* top);
 %}
@@ -26,7 +31,7 @@ int runCmdList(struct basic_cmd_linkedlist* top);
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG END
-%token <single_token> PIPE
+%token <single_token> PIPE SETENV
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
@@ -136,13 +141,68 @@ int runCmdList(struct basic_cmd_linkedlist* top) {
         i++;
         c = c->next;
     }
-        
-    execute(cmds, num_nodes);
+
+    char *paths = get_path();
+    execute(paths, cmds, num_nodes);
     
     for (int i = 0; i < num_nodes; i++) {
         for (int j = 0; j < cmds[i].num_args; j++) {
             free(cmds[i].val[j]);
         }
-    } 
+    }
     return 0;
+}
+
+int runSetEnv(const char* var, const char* val) {
+    int index = get_var_index(var);
+
+    if (index == -1) { // This means the var does not exist yet
+        // Add new env var
+        strcpy(varTable.var[varIndex], var);
+        strcpy(varTable.word[varIndex], val);
+        varIndex++;
+    } else {
+        // Just update the value at that index
+        strcpy(varTable.var[index], var);
+        strcpy(varTable.word[index], val);
+    }
+    return 0;
+}
+
+/*
+* Gets to global path variable
+* return {const char*}
+*/
+char* get_path() {
+    int index = get_var_index("PATH");
+    if (index == -1) {
+        char* result = malloc(sizeof(char));
+        result[0] = '\0';
+        return result;
+    } else {
+        int size = strlen(varTable.var[index]);
+        char* result = malloc(size * sizeof(char));
+        strcpy(result, varTable.word[index]);
+        return result;
+    }
+}
+
+/*
+* Gets the var index from varTable
+* params {const char*} The variable to look for
+* return {int} the index of the variable, if not found returns -1
+*/
+int get_var_index(const char* var) {
+    int index = -1;
+    
+    // Iterate through all vars
+    for (int i = 0; i < varIndex; i++) {
+        if (strcmp(varTable.var[i], var) == 0) {
+            // If found get index
+            index = i;
+            break;
+        }
+    }
+
+    return index; // If not found, -1 else i
 }
