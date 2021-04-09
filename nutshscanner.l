@@ -45,6 +45,10 @@ alias		          { return ALIAS; }
 "\n"		          { return END; }
 setenv                { return SETENV; }
 [\"]                  { BEGIN(string_condition); }
+">"                   { return GREATER; }
+"<"                   { return LESSER; }
+">>"                  { return GREATGREAT; }
+">&"                  { return GREATAMPERSAND; }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);
                         // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html

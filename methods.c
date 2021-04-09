@@ -141,7 +141,7 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top) {
     }
 }
 
-int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
+int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein) {
     int num_process = num_nodes;
     int num_pipes = num_process-1;
     int p[num_pipes][2];
@@ -153,6 +153,8 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
         }
     }
     
+
+    
     struct path_vars* paths = parse_path(path);
 
     for (int i = 0; i < num_process; i++) {
@@ -160,6 +162,17 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
         if (child == 0) {
             
             if (i == 0) {
+                if (filein != NULL) {
+                    char *cwd = get_current_dir();
+                    char *new_file_path = append_str(cwd, filein);
+                    FILE *file_dis = fopen(new_file_path, "r");
+                    if (file_dis != NULL) {
+                        int file_num = fileno(file_dis);
+                        dup2(file_num, STDIN_FILENO);
+                        close(file_num);
+                    }
+                    free(new_file_path);
+                }
                 dup2(p[i][1], STDOUT_FILENO);
             }
             else if (i == num_process-1) {
@@ -187,6 +200,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
             return 0;
         }
     }
+
     for (int j = 0; j < num_pipes; j++) {
         close(p[j][0]);
         close(p[j][1]);
@@ -253,4 +267,18 @@ void free_path_vars(struct path_vars* p) {
     }
     // Then free it's struct
     free(p);
+}
+
+/**
+ Gets the current working directory
+ @return {char*}
+ */
+char* get_current_dir() {
+    char *cwd = malloc(STRING_BUFF * sizeof(char));
+    if (getcwd(cwd, sizeof(char) * STRING_BUFF) != NULL) {
+        return cwd;
+    } else {
+        perror("getcwd() error");
+        return NULL;
+    }
 }
