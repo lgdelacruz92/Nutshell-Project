@@ -29,7 +29,7 @@ bool ifAlias(char* name){
 %option noyywrap
 
 CHAR            [.A-Za-z0-9!\/_-][.A-Za-z0-9!\/_-]*
-ANYCHAR            [)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -]*
+ANYCHAR            [}{)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -]*
 
 %x string_condition
 %%
@@ -47,6 +47,10 @@ printenv              { return PRINTENV; }
 setenv                { return SETENV; }
 unsetenv              { return UNSETENV; }
 [\"]                  { BEGIN(string_condition); }
+">"                   { return GREATER; }
+"<"                   { return LESSER; }
+">>"                  { return GREATGREAT; }
+">&"                  { return GREATAMPERSAND; }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);
                         // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
