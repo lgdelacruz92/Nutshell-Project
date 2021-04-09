@@ -184,7 +184,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes) {
             printf("Command not found: %s\n", cmds[i].val[0]);
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
-            break;
+            return 0;
         }
     }
     for (int j = 0; j < num_pipes; j++) {
