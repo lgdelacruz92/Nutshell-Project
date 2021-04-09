@@ -43,7 +43,9 @@ cd		              { return CD;}
 alias		          { return ALIAS; }
 \|                    { return PIPE; }
 "\n"		          { return END; }
+printenv              { return PRINTENV; }
 setenv                { return SETENV; }
+unsetenv              { return UNSETENV; }
 [\"]                  { BEGIN(string_condition); }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);

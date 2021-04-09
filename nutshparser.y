@@ -16,7 +16,9 @@ int yyerror(char *s);
 char* get_path();
 int get_var_index(const char* var);
 int runCD(char* arg);
+int runPrintEnv();
 int runSetEnv(const char* var, const char* val);
+int runUnSetEnv(const char* name);
 int runSetAlias(char *name, char *word);
 int runCmdList(struct basic_cmd_linkedlist* top);
 %}
@@ -30,8 +32,8 @@ int runCmdList(struct basic_cmd_linkedlist* top);
 }
 
 %start cmd_line
-%token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG END
-%token <single_token> PIPE SETENV
+%token <string> BYE CD STRING ALIAS PRINTENV SETENV UNSETENV LIST_DIR ARG FILE_ARG END
+%token <single_token> PIPE
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
@@ -39,6 +41,9 @@ int runCmdList(struct basic_cmd_linkedlist* top);
 %%
 cmd_line    :
 	BYE END 		                {exit(1); return 1; }
+    | PRINTENV END                  {runPrintEnv(); return 1;}
+    | SETENV STRING STRING END      {runSetEnv($2, $3); return 1;}
+    | UNSETENV STRING END           {runUnSetEnv($2); return 1;}
 	| CD STRING END        			{runCD($2); return 1;}
 	| ALIAS STRING STRING END		{runSetAlias($2, $3); return 1;}
     | pipe_list END                  {runCmdList($1); return 1;}
@@ -153,21 +158,76 @@ int runCmdList(struct basic_cmd_linkedlist* top) {
     return 0;
 }
 
+int runPrintEnv() {
+    char *name;
+    char *word;
+    char array[5];
+    for (int i = 0; i < varIndex; i++) {
+        name = varTable.var[i];
+        word = varTable.word[i];
+        printf("%s=", name);
+        printf("%s\n", word);
+    }
+}
+
 int runSetEnv(const char* var, const char* val) {
+    //check if word size is too large
+    long unsigned int maxSize = sizeof(varTable.word[0]);
+    long unsigned int wordSize = strlen(val);
+
+    if (wordSize > maxSize) {
+        printf("Error: word size is limited to %lu characters\n", maxSize);
+        return 1;
+    }
+
     int index = get_var_index(var);
 
     if (index == -1) { // This means the var does not exist yet
+        //check if vartable is full
+        if (varIndex >= sizeof(varTable.var) / sizeof(varTable.var[0]) ) {
+            printf("Error: environment variable table is full\n");
+            return 1;
+        }
         // Add new env var
         strcpy(varTable.var[varIndex], var);
         strcpy(varTable.word[varIndex], val);
         varIndex++;
     } else {
         // Just update the value at that index
-        strcpy(varTable.var[index], var);
+        // strcpy(varTable.var[index], var);
         strcpy(varTable.word[index], val);
     }
     return 0;
 }
+
+int runUnSetEnv(const char *name) {
+    char *currName;
+    int currIndex = 0;
+    int foundFlag = 0;
+    //check if in table
+    for ( ; currIndex < varIndex; currIndex++) {
+        currName = varTable.var[currIndex];
+        if (strcmp(name, currName) == 0) {
+            foundFlag = 1;
+            break;
+        }
+    }
+    if (foundFlag) {
+        //move all entries up one
+        char *currWord;
+        for ( ; currIndex < varIndex - 1; currIndex++) {
+            currName = varTable.var[currIndex + 1];
+            currWord = varTable.word[currIndex + 1];
+            strcpy(varTable.var[currIndex], currName);
+            strcpy(varTable.word[currIndex], currWord);
+        }
+        strcpy(varTable.var[currIndex], "");
+        strcpy(varTable.word[currIndex], "");
+        varIndex--;
+    }
+    return 1;
+}
+
 
 /*
 * Gets to global path variable
