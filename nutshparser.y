@@ -21,7 +21,7 @@ int runShowEnv(const char* arg);
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
 int runSetAlias(char *name, char *word);
-int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_struct* fileout);
+int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_struct* fileout, char* err_file, int background);
 %}
 
 %union {
@@ -35,23 +35,27 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_st
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG PRINTENV UNSETENV END
-%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ENV_OB ENV_CB
+%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ENV_OB ENV_CB ERR_TO_FILE ERR_TO_STDOUT BACKGROUND_RUN
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
-%type<string> filein
+%type<string> filein fileerr
 %type<fs> fileout
+%type<single_token> background
 
 %%
 cmd_line    :
-	BYE END 		                                {exit(1); return 1; }
-    | PRINTENV END                                  {runPrintEnv(); return 1;}
-    | SETENV STRING STRING END                      {runSetEnv($2, $3); return 1;}
-    | UNSETENV STRING END                           {runUnSetEnv($2); return 1;}
-    | ENV_OB STRING ENV_CB END                      {runShowEnv($2); return 1;}
-	| CD STRING END        			                {runCD($2); return 1;}
-	| ALIAS STRING STRING END		                {runSetAlias($2, $3); return 1;}
-    | pipe_list filein fileout END                  {runCmdList($1, $2, $3); return 1;}
+	| BYE END 		                                           {exit(1); return 1; }
+    | PRINTENV END                                             {runPrintEnv(); return 1;}
+    | SETENV STRING STRING END                                 {runSetEnv($2, $3); return 1;}
+    | UNSETENV STRING END                                      {runUnSetEnv($2); return 1;}
+    | ENV_OB STRING ENV_CB END                                 {runShowEnv($2); return 1;}
+	| CD STRING END        			                           {runCD($2); return 1;}
+	| ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
+    | pipe_list filein fileout fileerr background END          {runCmdList($1, $2, $3, $4, $5); return 1;}
+
+background :                        { $$ = BACKGROUND_OFF; }
+           | BACKGROUND_RUN         { $$ = BACKGROUND_ON; }
 
 filein :                            { $$ = NULL; }
        | LESSER STRING              { $$ = $2; } 
@@ -59,6 +63,10 @@ filein :                            { $$ = NULL; }
 fileout :                           { $$ = NULL; }
         | GREATGREAT STRING         { $$ = make_fileout($2, APPEND); }
         | GREATER STRING            { $$ = make_fileout($2, CREATE); }
+
+fileerr :                           { $$ = NULL; }
+        | ERR_TO_FILE STRING        { $$ = $2; }
+        | ERR_TO_STDOUT             { $$ = "1"; }
 
 pipe_list : basic_cmd               {$$ = make_basic_cmd_linkedlist($1);}  
           | basic_cmd PIPE pipe_list  { 
@@ -146,7 +154,13 @@ int runSetAlias(char *name, char *word) {
 }
 
 
-int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_struct* fileout) {
+int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_struct* fileout, char* err, int background) {
+    if (top == NULL) {
+        return 0;
+    }
+    if (top->bcs == NULL) {
+        return 0;
+    }
     int num_nodes = count_bcll_nodes(top);
     struct cmd_struct cmds[num_nodes];
     struct basic_cmd_linkedlist * c = top;
@@ -160,7 +174,7 @@ int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_st
     }
 
     char *paths = get_path();
-    execute(paths, cmds, num_nodes, filein, fileout);
+    execute(paths, cmds, num_nodes, filein, fileout, err, background);
     
     for (int i = 0; i < num_nodes; i++) {
         for (int j = 0; j < cmds[i].num_args; j++) {

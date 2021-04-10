@@ -141,7 +141,7 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top) {
     }
 }
 
-int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, struct fileout_struct* fileout) {
+int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, struct fileout_struct* fileout, char* err, int background) {
     int num_process = num_nodes;
     int num_pipes = num_process-1;
     int p[num_pipes][2];
@@ -181,6 +181,8 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
                             close(file_num);
                         }
                     }
+                    
+                    redirect_std_err_to_file(err);
                 } else {
                     dup2(p[i][1], STDOUT_FILENO);
                 }
@@ -199,6 +201,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
                         dup2(file_num, STDOUT_FILENO);
                         close(file_num);
                     }
+                    redirect_std_err_to_file(err);
                 }
             }
             else {
@@ -228,9 +231,12 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
         close(p[j][0]);
         close(p[j][1]);
     }
-    for (int i = 0; i < num_process; i++) {
-        wait(NULL);
+    if (background == BACKGROUND_OFF) {
+        for (int i = 0; i < num_process; i++) {
+            wait(NULL);
+        }
     }
+
     return 0;
 }
 
@@ -312,4 +318,21 @@ struct fileout_struct* make_fileout(char* filename, int type) {
     result->type = type;
     strcpy(result->filename, filename);
     return result;
+}
+
+void redirect_std_err_to_file(char *file) {
+    if (file != NULL) {
+        if (strcmp(file, "1") == 0) {
+            // using stdout
+            dup2(STDOUT_FILENO, STDERR_FILENO);
+        } else {
+            // using a file
+            FILE *file_dis = fopen(file, "w");
+            if (file_dis != NULL) {
+                int file_num = fileno(file_dis);
+                dup2(file_num, STDERR_FILENO);
+                close(file_num);
+            }
+        }
+    }
 }

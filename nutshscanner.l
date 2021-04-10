@@ -71,9 +71,11 @@ unsetenv              { return UNSETENV; }
 ">>"                  { return GREATGREAT; }
 ">"                   { return GREATER; }
 "<"                   { return LESSER; }
-">&"                  { return GREATAMPERSAND; }
 "${"                  { return ENV_OB; }
 "}"                   { return ENV_CB; }
+"2>"                  { return ERR_TO_FILE; }
+"2>&1"                { return ERR_TO_STDOUT; }
+"&"                   { return BACKGROUND_RUN; }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);
                         // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html

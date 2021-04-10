@@ -41,6 +41,8 @@ struct path_vars {
 
 static const int APPEND = 0;
 static const int CREATE = 1;
+static const int BACKGROUND_OFF = 0;
+static const int BACKGROUND_ON = 1;
 
 struct fileout_struct {
     int type; // APPEND or CREATE
@@ -59,10 +61,11 @@ int count_bcll_nodes(struct basic_cmd_linkedlist* top);
 char **format_to_char_ptrptr(struct basic_cmd_linkedlist* top);
 void free_linked_list(struct linked_list* top);
 void free_bcs_linked_list(struct basic_cmd_linkedlist* top);
-int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, struct fileout_struct* fileout);
+int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, struct fileout_struct* fileout, char* err, int background);
 struct path_vars* parse_path(char* path);
 void free_path_vars(struct path_vars* p);
 char* get_current_dir(void);
 struct fileout_struct* make_fileout(char* filename, int type);
+void redirect_std_err_to_file(char *file);
 
 #endif /* methods_h */
