@@ -54,6 +54,6 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top);
 int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein);
 struct path_vars* parse_path(char* path);
 void free_path_vars(struct path_vars* p);
-char* get_current_dir();
+char* get_current_dir(void);
 
 #endif /* methods_h */

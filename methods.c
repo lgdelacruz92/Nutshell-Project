@@ -273,7 +273,7 @@ void free_path_vars(struct path_vars* p) {
  Gets the current working directory
  @return {char*}
  */
-char* get_current_dir() {
+char* get_current_dir(void) {
     char *cwd = malloc(STRING_BUFF * sizeof(char));
     if (getcwd(cwd, sizeof(char) * STRING_BUFF) != NULL) {
         return cwd;
