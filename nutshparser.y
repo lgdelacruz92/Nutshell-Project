@@ -21,7 +21,7 @@ int runShowEnv(const char* arg);
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
 int runSetAlias(char *name, char *word);
-int runCmdList(struct basic_cmd_linkedlist* top, char* filein, char* fileout);
+int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_struct* fileout);
 %}
 
 %union {
@@ -29,6 +29,7 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, char* fileout);
     struct basic_cmd_linkedlist* cmd_list;
     struct basic_cmd_struct* bcs;
     struct linked_list* ll;
+    struct fileout_struct* fs;
     int single_token;
 }
 
@@ -38,7 +39,8 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, char* fileout);
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
-%type<string> filein fileout
+%type<string> filein
+%type<fs> fileout
 
 %%
 cmd_line    :
@@ -55,7 +57,8 @@ filein :                            { $$ = NULL; }
        | LESSER STRING              { $$ = $2; } 
 
 fileout :                           { $$ = NULL; }
-        | GREATER STRING            { $$ = $2; }
+        | GREATGREAT STRING         { $$ = make_fileout($2, APPEND); }
+        | GREATER STRING            { $$ = make_fileout($2, CREATE); }
 
 pipe_list : basic_cmd               {$$ = make_basic_cmd_linkedlist($1);}  
           | basic_cmd PIPE pipe_list  { 
@@ -143,7 +146,7 @@ int runSetAlias(char *name, char *word) {
 }
 
 
-int runCmdList(struct basic_cmd_linkedlist* top, char *filein, char* fileout) {
+int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_struct* fileout) {
     int num_nodes = count_bcll_nodes(top);
     struct cmd_struct cmds[num_nodes];
     struct basic_cmd_linkedlist * c = top;
@@ -157,8 +160,6 @@ int runCmdList(struct basic_cmd_linkedlist* top, char *filein, char* fileout) {
     }
 
     char *paths = get_path();
-    printf("The file in %s\n", filein);
-    printf("The file out %s\n", fileout);
     execute(paths, cmds, num_nodes, filein, fileout);
     
     for (int i = 0; i < num_nodes; i++) {

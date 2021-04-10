@@ -68,9 +68,9 @@ printenv              { return PRINTENV; }
 setenv                { return SETENV; }
 unsetenv              { return UNSETENV; }
 [\"]                  { BEGIN(string_condition); }
+">>"                  { return GREATGREAT; }
 ">"                   { return GREATER; }
 "<"                   { return LESSER; }
-">>"                  { return GREATGREAT; }
 ">&"                  { return GREATAMPERSAND; }
 "${"                  { return ENV_OB; }
 "}"                   { return ENV_CB; }

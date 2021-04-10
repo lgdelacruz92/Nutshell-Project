@@ -141,7 +141,7 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top) {
     }
 }
 
-int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, char* fileout) {
+int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, struct fileout_struct* fileout) {
     int num_process = num_nodes;
     int num_pipes = num_process-1;
     int p[num_pipes][2];
@@ -170,7 +170,11 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, ch
                 }
                 if (num_process == 1) {
                     if (fileout != NULL) {
-                        FILE *file_dis = fopen(fileout, "w");
+                        char *mode = "w";
+                        if (fileout->type == APPEND) {
+                            mode = "a";
+                        }
+                        FILE *file_dis = fopen(fileout->filename, mode);
                         if (file_dis != NULL) {
                             int file_num = fileno(file_dis);
                             dup2(file_num, STDOUT_FILENO);
@@ -185,7 +189,11 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, ch
             else if (i == num_process-1) {
                 dup2(p[i-1][0], STDIN_FILENO);
                 if (fileout != NULL) {
-                    FILE *file_dis = fopen(fileout, "w");
+                    char *mode = "w";
+                    if (fileout->type == APPEND) {
+                        mode = "a";
+                    }
+                    FILE *file_dis = fopen(fileout->filename, mode);
                     if (file_dis != NULL) {
                         int file_num = fileno(file_dis);
                         dup2(file_num, STDOUT_FILENO);
@@ -296,4 +304,12 @@ char* get_current_dir(void) {
         perror("getcwd() error");
         return NULL;
     }
+}
+
+struct fileout_struct* make_fileout(char* filename, int type) {
+    struct fileout_struct* result = malloc(sizeof(struct fileout_struct));
+    result->filename = malloc(STRING_BUFF * sizeof(char));
+    result->type = type;
+    strcpy(result->filename, filename);
+    return result;
 }
