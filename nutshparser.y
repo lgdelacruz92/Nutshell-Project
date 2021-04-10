@@ -33,7 +33,7 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein);
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG PRINTENV UNSETENV END
-%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND
+%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ERROR
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments

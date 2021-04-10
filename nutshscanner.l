@@ -6,6 +6,7 @@
 #include <string.h>
 #include "global.h"
 #include <stdbool.h>
+void yyerror(char *);
 
 //#define unput(c) {yytchar= (c); if(yytchar=='\n') {yylineno--; *yysptr++=yytchar;}
 char* subAliases(char* name){
@@ -16,6 +17,7 @@ char* subAliases(char* name){
     }
     return name;
 }
+
 bool ifAlias(char* name){
     for (int i = 0; i < aliasIndex; i++) {
         if(strcmp(aliasTable.name[i], name) == 0) {
@@ -24,6 +26,25 @@ bool ifAlias(char* name){
     }
     return false;
 }
+
+int findVar(char *name) {
+    //remove brackets from string
+    char cleanNameArray[sizeof(varTable.var[0])];
+    char *cleanName = cleanNameArray;
+    int currIndex = 0;
+    for (int i = 2; i < strlen(name) - 1; i++) {
+        cleanName[i-2] = name[i];
+    }
+    //return index for variable or -1
+    for ( ; currIndex < varIndex; currIndex++) {
+        if(strcmp(varTable.var[currIndex], cleanName) == 0) {
+            return currIndex;
+        }
+    }
+
+    return -1;
+}
+
 %}
 %array
 %option noyywrap
@@ -51,6 +72,17 @@ unsetenv              { return UNSETENV; }
 "<"                   { return LESSER; }
 ">>"                  { return GREATGREAT; }
 ">&"                  { return GREATAMPERSAND; }
+"${"{CHAR}+"}"        { int varI = findVar(yytext);
+                        if (varI != -1) {
+                            printf("yytext before sub: %s\n", yytext);
+                            yylval.string = strdup(varTable.word[varI]);
+                            return STRING;
+                        }
+                        else {
+                            yyerror("Variable not found");
+                            return ERROR;
+                        } 
+                      }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);
                         // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
