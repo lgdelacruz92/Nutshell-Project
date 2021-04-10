@@ -173,6 +173,7 @@ int runPrintEnv() {
         printf("%s=", name);
         printf("%s\n", word);
     }
+    return 0;
 }
 
 int runSetEnv(const char* var, const char* val) {

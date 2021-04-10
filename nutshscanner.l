@@ -32,9 +32,11 @@ int findVar(char *name) {
     char cleanNameArray[sizeof(varTable.var[0])];
     char *cleanName = cleanNameArray;
     int currIndex = 0;
-    for (int i = 2; i < strlen(name) - 1; i++) {
+    int i = 2;
+    for (i = 2; i < strlen(name) - 1; i++) {
         cleanName[i-2] = name[i];
     }
+    cleanName[i] = '\0';
     //return index for variable or -1
     for ( ; currIndex < varIndex; currIndex++) {
         if(strcmp(varTable.var[currIndex], cleanName) == 0) {
