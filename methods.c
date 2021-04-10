@@ -223,7 +223,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
             printf("Command not found: %s\n", cmds[i].val[0]);
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
-            return 0;
+            exit(EXIT_FAILURE);
         }
     }
 
