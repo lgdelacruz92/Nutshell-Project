@@ -17,7 +17,6 @@ char* get_path();
 int get_var_index(const char* var);
 int runCD(char* arg);
 int runPrintEnv();
-int runShowEnv(const char* arg);
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
 int runSetAlias(char *name, char *word);
@@ -35,7 +34,7 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_st
 
 %start cmd_line
 %token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG PRINTENV UNSETENV END
-%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ENV_OB ENV_CB ERR_TO_FILE ERR_TO_STDOUT BACKGROUND_RUN
+%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ERR_TO_FILE ERR_TO_STDOUT BACKGROUND_RUN ERROR
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
@@ -49,7 +48,6 @@ cmd_line    :
     | PRINTENV END                                             {runPrintEnv(); return 1;}
     | SETENV STRING STRING END                                 {runSetEnv($2, $3); return 1;}
     | UNSETENV STRING END                                      {runUnSetEnv($2); return 1;}
-    | ENV_OB STRING ENV_CB END                                 {runShowEnv($2); return 1;}
 	| CD STRING END        			                           {runCD($2); return 1;}
 	| ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
     | pipe_list filein fileout fileerr background END          {runCmdList($1, $2, $3, $4, $5); return 1;}
@@ -294,15 +292,4 @@ int get_var_index(const char* var) {
     return index; // If not found, -1 else i
 }
 
-/*
-* Prints and environment variable
-*/
-int runShowEnv(const char* env) {
-    int i = get_var_index(env);
-    if (i == -1) {
-        printf("Error: %s is not an environment variable.\n", env);
-    } else {
-        printf("%s\n",varTable.word[i]);
-    }
-    return 0;
-}
+

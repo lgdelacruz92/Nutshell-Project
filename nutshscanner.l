@@ -36,7 +36,8 @@ int findVar(char *name) {
     for (i = 2; i < strlen(name) - 1; i++) {
         cleanName[i-2] = name[i];
     }
-    cleanName[i] = '\0';
+    cleanName[i-2] = '\0';
+    printf("clean name %s\n", cleanName);
     //return index for variable or -1
     for ( ; currIndex < varIndex; currIndex++) {
         if(strcmp(varTable.var[currIndex], cleanName) == 0) {
@@ -73,11 +74,20 @@ unsetenv              { return UNSETENV; }
 ">>"                  { return GREATGREAT; }
 ">"                   { return GREATER; }
 "<"                   { return LESSER; }
-"${"                  { return ENV_OB; }
-"}"                   { return ENV_CB; }
 "2>"                  { return ERR_TO_FILE; }
 "2>&1"                { return ERR_TO_STDOUT; }
 "&"                   { return BACKGROUND_RUN; }
+"${"{CHAR}+"}"        { int varI = findVar(yytext);
+                        if (varI != -1) {
+                            printf("yytext before sub: %s\n", yytext);
+                            yylval.string = strdup(varTable.word[varI]);
+                            return STRING;
+                        }
+                        else {
+                            yyerror("Variable not found");
+                            return ERROR;
+                        } 
+                      }
 {CHAR}+               {if(ifAlias(yytext)) {
                         printf("yytext before sub: %s\n", yytext);
                         // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
