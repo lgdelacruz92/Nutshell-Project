@@ -37,7 +37,6 @@ int findVar(char *name) {
         cleanName[i-2] = name[i];
     }
     cleanName[i-2] = '\0';
-    printf("clean name %s\n", cleanName);
     //return index for variable or -1
     for ( ; currIndex < varIndex; currIndex++) {
         if(strcmp(varTable.var[currIndex], cleanName) == 0) {
@@ -52,7 +51,7 @@ int findVar(char *name) {
 %array
 %option noyywrap
 
-CHAR            [.A-Za-z0-9!~\/_-][:.A-Za-z0-9!\/_-]*
+CHAR            [*?.A-Za-z0-9!~\/_-][*?:.A-Za-z0-9!\/_-]*
 ANYCHAR            [}{)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -]*
 
 %x string_condition
