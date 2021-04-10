@@ -141,7 +141,7 @@ void free_bcs_linked_list(struct basic_cmd_linkedlist* top) {
     }
 }
 
-int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein) {
+int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, char* fileout) {
     int num_process = num_nodes;
     int num_pipes = num_process-1;
     int p[num_pipes][2];
@@ -153,8 +153,6 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein) {
         }
     }
     
-
-    
     struct path_vars* paths = parse_path(path);
 
     for (int i = 0; i < num_process; i++) {
@@ -163,20 +161,37 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein) {
             
             if (i == 0) {
                 if (filein != NULL) {
-                    char *cwd = get_current_dir();
-                    char *new_file_path = append_str(cwd, filein);
-                    FILE *file_dis = fopen(new_file_path, "r");
+                    FILE *file_dis = fopen(filein, "r");
                     if (file_dis != NULL) {
                         int file_num = fileno(file_dis);
                         dup2(file_num, STDIN_FILENO);
                         close(file_num);
                     }
-                    free(new_file_path);
                 }
-                dup2(p[i][1], STDOUT_FILENO);
+                if (num_process == 1) {
+                    if (fileout != NULL) {
+                        FILE *file_dis = fopen(fileout, "w");
+                        if (file_dis != NULL) {
+                            int file_num = fileno(file_dis);
+                            dup2(file_num, STDOUT_FILENO);
+                            close(file_num);
+                        }
+                    }
+                } else {
+                    dup2(p[i][1], STDOUT_FILENO);
+                }
+                
             }
             else if (i == num_process-1) {
                 dup2(p[i-1][0], STDIN_FILENO);
+                if (fileout != NULL) {
+                    FILE *file_dis = fopen(fileout, "w");
+                    if (file_dis != NULL) {
+                        int file_num = fileno(file_dis);
+                        dup2(file_num, STDOUT_FILENO);
+                        close(file_num);
+                    }
+                }
             }
             else {
                 dup2(p[i-1][0], STDIN_FILENO);

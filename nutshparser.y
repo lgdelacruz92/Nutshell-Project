@@ -21,7 +21,7 @@ int runShowEnv(const char* arg);
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
 int runSetAlias(char *name, char *word);
-int runCmdList(struct basic_cmd_linkedlist* top, char* filein);
+int runCmdList(struct basic_cmd_linkedlist* top, char* filein, char* fileout);
 %}
 
 %union {
@@ -38,21 +38,24 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein);
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
-%type<string> filein
+%type<string> filein fileout
 
 %%
 cmd_line    :
-	BYE END 		                {exit(1); return 1; }
-    | PRINTENV END                  {runPrintEnv(); return 1;}
-    | SETENV STRING STRING END      {runSetEnv($2, $3); return 1;}
-    | UNSETENV STRING END           {runUnSetEnv($2); return 1;}
-    | ENV_OB STRING ENV_CB END         {runShowEnv($2); return 1;}
-	| CD STRING END        			{runCD($2); return 1;}
-	| ALIAS STRING STRING END		{runSetAlias($2, $3); return 1;}
-    | pipe_list filein END                  {runCmdList($1, $2); return 1;}
+	BYE END 		                                {exit(1); return 1; }
+    | PRINTENV END                                  {runPrintEnv(); return 1;}
+    | SETENV STRING STRING END                      {runSetEnv($2, $3); return 1;}
+    | UNSETENV STRING END                           {runUnSetEnv($2); return 1;}
+    | ENV_OB STRING ENV_CB END                      {runShowEnv($2); return 1;}
+	| CD STRING END        			                {runCD($2); return 1;}
+	| ALIAS STRING STRING END		                {runSetAlias($2, $3); return 1;}
+    | pipe_list filein fileout END                  {runCmdList($1, $2, $3); return 1;}
 
 filein :                            { $$ = NULL; }
        | LESSER STRING              { $$ = $2; } 
+
+fileout :                           { $$ = NULL; }
+        | GREATER STRING            { $$ = $2; }
 
 pipe_list : basic_cmd               {$$ = make_basic_cmd_linkedlist($1);}  
           | basic_cmd PIPE pipe_list  { 
@@ -140,7 +143,7 @@ int runSetAlias(char *name, char *word) {
 }
 
 
-int runCmdList(struct basic_cmd_linkedlist* top, char *filein) {
+int runCmdList(struct basic_cmd_linkedlist* top, char *filein, char* fileout) {
     int num_nodes = count_bcll_nodes(top);
     struct cmd_struct cmds[num_nodes];
     struct basic_cmd_linkedlist * c = top;
@@ -155,7 +158,8 @@ int runCmdList(struct basic_cmd_linkedlist* top, char *filein) {
 
     char *paths = get_path();
     printf("The file in %s\n", filein);
-    execute(paths, cmds, num_nodes, filein);
+    printf("The file out %s\n", fileout);
+    execute(paths, cmds, num_nodes, filein, fileout);
     
     for (int i = 0; i < num_nodes; i++) {
         for (int j = 0; j < cmds[i].num_args; j++) {
