@@ -172,6 +172,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
         }
     }
     
+    
     struct path_vars* paths = parse_path(path);
 
     for (int i = 0; i < num_process; i++) {
@@ -232,14 +233,14 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
                 close(p[j][0]);
                 close(p[j][1]);
             }
-            
+
             for (int j = 0; j < paths->num_paths; j++) {
                 char *new_cmd = append_str(paths->paths[j], cmds[i].val[0]);
-                execv(new_cmd, cmds[i].val);
+                execvp(new_cmd, cmds[i].val);
             }
             
             dup2(1, STDOUT_FILENO);
-            printf("Command not found: (%s)\n", cmds[i].val[0]);
+            printf("Error with the command (%s). Make sure it is used correctly. `man %s` for help\n", cmds[i].val[0], cmds[i].val[0]);
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
             exit(EXIT_FAILURE);
@@ -250,6 +251,8 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
         close(p[j][0]);
         close(p[j][1]);
     }
+    
+    
 //    if (background == BACKGROUND_OFF) {
     for (int i = 0; i < num_process; i++) {
         wait(NULL);
