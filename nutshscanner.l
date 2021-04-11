@@ -7,7 +7,7 @@
 #include "global.h"
 #include <stdbool.h>
 void yyerror(char *);
-bool first_word = true;
+int call_count = 0;
 
 //#define unput(c) {yytchar= (c); if(yytchar=='\n') {yylineno--; *yysptr++=yytchar;}
 char* subAliases(char* name){
@@ -59,15 +59,9 @@ ANYCHAR            [}{)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/
 %x string_condition 
 %s alias_condition
 %%
-    if (first_word) {
-        first_word = false;
-        BEGIN(alias_condition);
-    }
-    else {
-        BEGIN(INITIAL);
-    }
+    call_count++;
 
-<string_condition>{ANYCHAR}+     { yylval.string = strdup(yytext); return STRING;}
+<string_condition>{ANYCHAR}+     {yylval.string = strdup(yytext); return STRING;}
 <string_condition>[\"]          {BEGIN(INITIAL);}
 
 
@@ -78,7 +72,7 @@ cd		              { return CD;}
 alias		          { return ALIAS; }
 unalias               { return UNALIAS; }
 \|                    { return PIPE; }
-"\n"		          { first_word = true; return END; }
+"\n"		          { call_count = 0; return END; }
 printenv              { return PRINTENV; }
 setenv                { return SETENV; }
 unsetenv              { return UNSETENV; }
@@ -100,24 +94,20 @@ unsetenv              { return UNSETENV; }
                             return 1;
                         } 
                       }
-<alias_condition>{CHAR}+  {
-                            if(ifAlias(yytext)) {
-                                printf("yytext before sub: %s\n", yytext);
-                                // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
-                                char *yycopy = strdup( subAliases(yytext) );
-                                for ( int i = strlen(subAliases(yytext)) - 1; i >= 0; --i )
-                                    unput( yycopy[i] );
-                                free( yycopy );
-                            } else {
-                                printf("yytext: %s\n", yytext);
-                                yylval.string = strdup(yytext);
-                                return STRING;
-                            };
-                          }
 {CHAR}+               {
-                        printf("yytext: %s\n", yytext);
-                        yylval.string = strdup(yytext);
-                        return STRING;
-                      }
+                        if(call_count == 1 && ifAlias(yytext)) {
+                            printf("yytext before sub: %s\n", yytext);
+                            // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
+                            char *yycopy = strdup( subAliases(yytext) );
+                            for ( int i = strlen(subAliases(yytext)) - 1; i >= 0; --i )
+                                unput( yycopy[i] );
+                            free( yycopy );
+                        } else {
+                            BEGIN(INITIAL);
+                            printf("yytext: %s\n", yytext);
+                            yylval.string = strdup(yytext);
+                            return STRING;
+                        };
+                       }
 
 %%
