@@ -31,7 +31,7 @@ char *concatenate(char* s1, char* s2, char* s3) {
 
 char* append_str(char* s1, char *s2) {
     int cmds_size = (int)strlen(s1);
-    int path_size = (int)strlen(s1);
+    int path_size = (int)strlen(s2);
     char *new_cmd = malloc((cmds_size + path_size + 2) * sizeof(char));
     memcpy(new_cmd, s1, cmds_size);
     new_cmd[cmds_size] = '/';
@@ -239,7 +239,7 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
             }
             
             dup2(1, STDOUT_FILENO);
-            printf("Command not found: %s\n", cmds[i].val[0]);
+            printf("Command not found: (%s)\n", cmds[i].val[0]);
             close(STDIN_FILENO);
             close(STDOUT_FILENO);
             exit(EXIT_FAILURE);
@@ -250,11 +250,11 @@ int execute(char* path, struct cmd_struct* cmds, int num_nodes, char* filein, st
         close(p[j][0]);
         close(p[j][1]);
     }
-    if (background == BACKGROUND_OFF) {
-        for (int i = 0; i < num_process; i++) {
-            wait(NULL);
-        }
+//    if (background == BACKGROUND_OFF) {
+    for (int i = 0; i < num_process; i++) {
+        wait(NULL);
     }
+//    }
 
     return 0;
 }
