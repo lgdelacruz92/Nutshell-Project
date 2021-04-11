@@ -417,6 +417,15 @@ struct match_files* get_matching(const char* pattern) {
         count_matches++;
     }
     
+    if (count_matches == 0) {
+        for (int i = 0; i < j; i++) {
+            free(results[i]);
+        }
+        
+        close(p[0]);
+        return NULL;
+    }
+    
     struct match_files *result = malloc(sizeof(struct match_files));
     result->num = count_matches;
     result->files = malloc(sizeof(char*) * count_matches);

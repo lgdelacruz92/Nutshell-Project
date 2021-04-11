@@ -87,11 +87,16 @@ basic_cmd :                         { $$ = NULL; }
 arguments   :                       { $$ = NULL; }
             | STRING arguments      { 
                                         struct linked_list* top = make_linkedlist($1);
-                                        struct linked_list* c = top;
-                                        while (c->next != NULL) {
-                                            c = c->next;   
+                                        if (top == NULL) {
+                                            $$ = NULL;
                                         }
-                                        c->next = $2;
+                                        else {
+                                            struct linked_list* c = top;
+                                            while (c->next != NULL) {
+                                                c = c->next;   
+                                            }
+                                            c->next = $2;
+                                        }
                                         $$ = top;
                                     } 
 %%
