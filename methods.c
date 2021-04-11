@@ -10,8 +10,8 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <sys/wait.h>
-#include "methods.h"
 #include <fnmatch.h>
+#include "methods.h"
 
 char *concatenate(char* s1, char* s2, char* s3) {
     unsigned long t1 = strlen(s1);

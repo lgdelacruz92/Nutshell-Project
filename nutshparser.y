@@ -15,6 +15,8 @@ int yylex();
 int yyerror(char *s);
 char* get_path();
 int get_var_index(const char* var);
+int get_alias_index(const char* var);
+int check_loop(const char *var, char **visited, int visited_index);
 int runCD(char* arg);
 int runPrintEnv();
 int runSetEnv(const char* var, const char* val);
@@ -139,23 +141,45 @@ int runCD(char* arg) {
 }
 
 int runSetAlias(char *name, char *word) {
-	for (int i = 0; i < aliasIndex; i++) {
-		if(strcmp(name, word) == 0){
-			printf("Error, expansion of \"%s\" would create a loop.\n", name);
-			return 1;
-		}
-		else if((strcmp(aliasTable.name[i], name) == 0) && (strcmp(aliasTable.word[i], word) == 0)){
-			printf("Error, expansion of \"%s\" would create a loop.\n", name);
-			return 1;
-		}
-		else if(strcmp(aliasTable.name[i], name) == 0) {
-			strcpy(aliasTable.word[i], word);
-			return 1;
-		}
-	}
-	strcpy(aliasTable.name[aliasIndex], name);
-	strcpy(aliasTable.word[aliasIndex], word);
-	aliasIndex++;
+    int index = get_alias_index(name);
+    char prev[100];
+    if (index == -1) {
+    	strcpy(aliasTable.name[aliasIndex], name);
+    	strcpy(aliasTable.word[aliasIndex], word);
+	    aliasIndex++;
+    }
+    else {
+        // Temporarily save the old value
+        strcpy(prev, aliasTable.word[index]);
+	    strcpy(aliasTable.word[index], word);
+    }
+
+    for (int i = 0; i < aliasIndex; i++) {
+        printf("(%s) = (%s)\n", aliasTable.name[i], aliasTable.word[i]);
+    }
+
+    // If there is a loop undo and print err
+    char **visited = malloc(100 * sizeof(char*));
+    for (int i = 0; i < 100; i++) {
+        visited[i] = malloc(100 * sizeof(char));
+    }
+    int visited_index = 0;
+    if (check_loop(name, visited, visited_index) == 0) {
+        printf("Error, expansion of \"%s\" would create a loop.\n", name);
+        if (index == -1) {
+            strcpy(aliasTable.name[aliasIndex], "\0");
+            strcpy(aliasTable.word[aliasIndex], "\0");
+            aliasIndex--;
+        }
+        else {
+            // Put the old one back
+            strcpy(aliasTable.word[index], prev);
+        }
+    }
+    for (int i = 0; i < 100; i++) {
+        free(visited[i]);
+    }
+    free(visited);
 
 	return 1;
 }
@@ -265,10 +289,9 @@ int runSetEnv(const char* var, const char* val) {
         strcpy(varTable.word[varIndex], val);
         varIndex++;
     } else {
-        // Just update the value at that index
-        // strcpy(varTable.var[index], var);
         strcpy(varTable.word[index], val);
     }
+
     return 0;
 }
 
@@ -339,4 +362,49 @@ int get_var_index(const char* var) {
     return index; // If not found, -1 else i
 }
 
+/*
+* Gets the alias index
+* return -1 if not found, pos num otherwise
+*/
+int get_alias_index(const char* var) {
+    int index = -1;
+
+    // Iterate through all vars
+    for (int i = 0; i < aliasIndex; i++) {
+        if (strcmp(aliasTable.name[i], var) == 0) {
+            // If found get index
+            index = i;
+            break;
+        }
+    }
+
+    return index; // If not found, -1 else i
+}
+
+/**
+ Checks if there is a loop in alias
+ @return 0 if true, -1 if not
+ */
+int check_loop(const char* var, char **visited, int visited_index) {
+    if (visited_index >= 100) {
+        return -1;
+    }
+    for (int i = 0; i < visited_index; i++) {
+        if (strcmp(visited[i], var) == 0) {
+            return 0;
+        }
+    }
+    
+    int index = get_alias_index(var);
+    if (index != -1) {
+        char word[100];
+        strcpy(word, aliasTable.word[index]);
+        strcpy(visited[visited_index], var);
+        visited_index++;
+        if (check_loop(word, visited, visited_index) == 0) {
+            return 0;
+        }
+    }
+    return -1;
+}
 
