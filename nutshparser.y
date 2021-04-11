@@ -19,7 +19,9 @@ int runCD(char* arg);
 int runPrintEnv();
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
-int runSetAlias(char *name, char *word);
+int runPrintAlias();
+int runSetAlias(char* name, char* word);
+int runUnAlias(const char* name);
 int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_struct* fileout, char* err_file, int background);
 %}
 
@@ -33,8 +35,8 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_st
 }
 
 %start cmd_line
-%token <string> BYE CD STRING ALIAS LIST_DIR ARG FILE_ARG PRINTENV UNSETENV END
-%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ERR_TO_FILE ERR_TO_STDOUT BACKGROUND_RUN ERROR
+%token <string> BYE CD STRING ALIAS UNALIAS LIST_DIR ARG FILE_ARG PRINTENV UNSETENV END
+%token <single_token> PIPE SETENV LESSER GREATER GREATGREAT GREATAMPERSAND ERR_TO_FILE ERR_TO_STDOUT BACKGROUND_RUN
 %type <cmd_list> pipe_list 
 %type <bcs> basic_cmd
 %type <ll> arguments
@@ -48,8 +50,10 @@ cmd_line    :
     | PRINTENV END                                             {runPrintEnv(); return 1;}
     | SETENV STRING STRING END                                 {runSetEnv($2, $3); return 1;}
     | UNSETENV STRING END                                      {runUnSetEnv($2); return 1;}
-	| CD STRING END        			                           {runCD($2); return 1;}
-	| ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
+	| UNALIAS STRING END                                       {runUnAlias($2); return 1;}
+    | CD STRING END        			                           {runCD($2); return 1;}
+    | ALIAS END                                                {runPrintAlias(); return 1;}
+    | ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
     | pipe_list filein fileout fileerr background END          {runCmdList($1, $2, $3, $4, $5); return 1;}
 
 background :                        { $$ = BACKGROUND_OFF; }
@@ -74,7 +78,9 @@ pipe_list : basic_cmd               {$$ = make_basic_cmd_linkedlist($1);}
                                     }
 
 basic_cmd :                         { $$ = NULL; }
-          | STRING arguments        { $$ = make_basic_cmd($1, $2); }
+          | STRING arguments         { 
+                                        $$ = make_basic_cmd($1, $2); 
+                                    }
 
 arguments   :                       { $$ = NULL; }
             | STRING arguments      { 
@@ -86,7 +92,6 @@ arguments   :                       { $$ = NULL; }
                                         c->next = $2;
                                         $$ = top;
                                     } 
-
 %%
 
 int yyerror(char *s) {
@@ -155,6 +160,45 @@ int runSetAlias(char *name, char *word) {
 	return 1;
 }
 
+int runPrintAlias() {
+    char *name;
+    char *word;
+    for (int i = 0; i < aliasIndex; i++) {
+        name = aliasTable.name[i];
+        word = aliasTable.word[i];
+        printf("%s=", name);
+        printf("%s\n", word);
+    }
+    return 0;
+}
+
+int runUnAlias(const char *name) {
+    char *currName;
+    int currIndex = 0;
+    int foundFlag = 0;
+    //check if in table
+    for ( ; currIndex < aliasIndex; currIndex++) {
+        currName = aliasTable.name[currIndex];
+        if (strcmp(name, currName) == 0) {
+            foundFlag = 1;
+            break;
+        }
+    }
+    if (foundFlag) {
+        //move all entries up one
+        char *currWord;
+        for ( ; currIndex < aliasIndex - 1; currIndex++) {
+            currName = aliasTable.name[currIndex + 1];
+            currWord = aliasTable.word[currIndex + 1];
+            strcpy(aliasTable.name[currIndex], currName);
+            strcpy(aliasTable.word[currIndex], currWord);
+        }
+        strcpy(aliasTable.name[currIndex], "");
+        strcpy(aliasTable.word[currIndex], "");
+        aliasIndex--;
+    }
+    return 1;
+}
 
 int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_struct* fileout, char* err, int background) {
     if (top == NULL) {
@@ -189,7 +233,6 @@ int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_st
 int runPrintEnv() {
     char *name;
     char *word;
-    char array[5];
     for (int i = 0; i < varIndex; i++) {
         name = varTable.var[i];
         word = varTable.word[i];
