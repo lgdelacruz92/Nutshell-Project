@@ -3,6 +3,7 @@
 //  nutshell
 //
 //  Created by Dela Cruz, Lester on 4/3/21.
+//  Wildcard matching functions created by Dawson Eggleston
 //
 #define _GNU_SOURCE
 #include <string.h>
@@ -335,4 +336,39 @@ void redirect_std_err_to_file(char *file) {
             }
         }
     }
+}
+
+//checks if string matches input pattern
+int checkForMatch(char *str, char *pattern, int n, int m) {
+    //end of both pattern and str, so return true
+    if (m < 0 && n < 0) {
+        return 1;
+    }
+    //end of pattern
+    else if (m < 0) {
+        return 0;
+    }
+    //end of input string, check if pattern only has * remaining
+    else if (n < 0) {
+        for (int i = 0; i <= m; i++) {
+            if (pattern[i] != '*') {
+                return 0;
+            }
+        }
+        return 1;
+    }
+    if (lookup[m][n] == -1) {
+        if (pattern[m] == '*') {
+            lookup[m][n] = checkForMatch(str, pattern, n - 1, m) || checkForMatch(str, pattern, n, m-1);
+        }
+        else {
+            if (pattern[m] != '?' && pattern[m] != str[n]) {
+                lookup[m][n] = 0;
+            }
+            else {
+                lookup[m][n] = checkForMatch(str, pattern, n - 1, m - 1);
+            }
+        }
+    }
+    return lookup[m][n];
 }

@@ -3,12 +3,18 @@
 //  nutshell
 //
 //  Created by Dela Cruz, Lester on 4/3/21.
+//  Wildcard matching functions created by Dawson Eggleston
 //
 
 #ifndef methods_h
 #define methods_h
 #include <stdio.h>
 #define STRING_BUFF 1024
+
+//used by wildcard matching
+#define MAXLEN 100
+int lookup[MAXLEN][MAXLEN];
+
 struct basic_cmd_struct {
     int num_cmd_args;
     char **cmd_args;
@@ -67,5 +73,6 @@ void free_path_vars(struct path_vars* p);
 char* get_current_dir(void);
 struct fileout_struct* make_fileout(char* filename, int type);
 void redirect_std_err_to_file(char *file);
+int checkForMatch(char *str, char *pattern, int n, int m);
 
 #endif /* methods_h */

@@ -96,6 +96,7 @@ int yyerror(char *s) {
   }
 
 int runCD(char* arg) {
+    
 	if (arg[0] != '/') { // arg is relative path
 		strcat(varTable.word[0], "/");
 		strcat(varTable.word[0], arg);

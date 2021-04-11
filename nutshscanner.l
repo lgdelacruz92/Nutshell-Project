@@ -5,9 +5,46 @@
 #include "nutshparser.tab.h"
 #include <string.h>
 #include "global.h"
+#include "methods.h"
+#include <dirent.h> 
 #include <stdbool.h>
+#include <stdio.h>
 void yyerror(char *);
 int call_count = 0;
+
+bool checkWild(char* input) {
+    for (int i = 0; i < strlen(input); i++) {
+        if (input[i] == '*' || input[i] == '?') {
+            return true;
+        }
+    }
+    return false;
+}
+
+char* wildCard(char* input) {
+    memset(lookup, -1, sizeof(lookup));
+    DIR *d;
+    struct dirent *dir;
+    d = opendir(varTable.word[0]);
+    
+    if (d) {
+        while ((dir = readdir(d)) != NULL) {
+            if (strcmp(dir->d_name,".") == 0 || strcmp(dir->d_name,"..") == 0) {
+                continue;
+            }
+            if (checkForMatch(dir->d_name, input, strlen(dir->d_name) - 1, strlen(input) - 1)) {
+                char* output = strdup(dir->d_name);
+                closedir(d);
+                return output;
+            }
+        }
+        closedir(d);
+    }
+    return(input);
+
+}
+
+
 
 //#define unput(c) {yytchar= (c); if(yytchar=='\n') {yylineno--; *yysptr++=yytchar;}
 char* subAliases(char* name){
@@ -53,7 +90,7 @@ int findVar(char *name) {
 %array
 %option noyywrap
 
-CHAR            [.A-Za-z0-9!~\/_-][:.A-Za-z0-9!\/_-]*
+CHAR            [.A-Za-z0-9!*?~\/_-][:.A-Za-z0-9!*?\/_-]*
 ANYCHAR            [}{)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -][)(*&%$#@!`;,\.a-zA-Z0-9'/*_=~ -]*
 
 %x string_condition 
@@ -103,7 +140,13 @@ unsetenv              { return UNSETENV; }
                                 unput( yycopy[i] );
                             free( yycopy );
                         } else {
-                            BEGIN(INITIAL);
+                            if (call_count > 1 && checkWild(yytext)) {                                
+                                char* newtext = wildCard(yytext);
+                                printf("yytext before sub: %s\n", yytext);
+                                printf("new text is: %s\n", newtext);
+                                yylval.string = strdup(newtext);
+                                return STRING;
+                            }
                             printf("yytext: %s\n", yytext);
                             yylval.string = strdup(yytext);
                             return STRING;
