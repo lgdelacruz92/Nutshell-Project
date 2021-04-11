@@ -49,6 +49,11 @@ struct fileout_struct {
     char* filename;
 };
 
+struct match_files {
+    int num;
+    char **files;
+};
+
 char* concatenate(char* s1, char* s2, char* s3);
 char* append_str(char* s1, char *s2);
 struct basic_cmd_struct* make_basic_cmd_struct(int num_args, char **arguments);
@@ -67,5 +72,8 @@ void free_path_vars(struct path_vars* p);
 char* get_current_dir(void);
 struct fileout_struct* make_fileout(char* filename, int type);
 void redirect_std_err_to_file(char *file);
+struct match_files* get_matching(const char* pattern);
+void free_match_files(struct match_files* matches);
+int has_pattern(const char *arg);
 
 #endif /* methods_h */

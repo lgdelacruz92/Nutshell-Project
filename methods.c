@@ -11,6 +11,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include "methods.h"
+#include <fnmatch.h>
 
 char *concatenate(char* s1, char* s2, char* s3) {
     unsigned long t1 = strlen(s1);
@@ -54,11 +55,29 @@ struct basic_cmd_list_struct* make_basic_cmd_list_struct(int num_bcs, struct bas
 }
 
 struct linked_list* make_linkedlist(const char *ll_val) {
-    struct linked_list* ll = malloc(sizeof(struct linked_list));
-    ll->val = malloc(STRING_BUFF * sizeof(char));
-    ll->next = NULL;
-    strcpy(ll->val, ll_val);
-    return ll;
+    if (has_pattern(ll_val) == 0) {
+        struct match_files* matches = get_matching(ll_val);
+        if (matches != NULL) {
+            struct linked_list* ll = NULL;
+            for (int i = matches->num-1; i >= 0; i--) {
+                struct linked_list* new_ll = malloc(sizeof(struct linked_list));
+                new_ll->next = ll;
+                new_ll->val = malloc(200 * sizeof(char));
+                strcpy(new_ll->val, matches->files[i]);
+                ll = new_ll;
+            }
+            free_match_files(matches);
+            return ll;
+        }
+        return NULL;
+    } else {
+        struct linked_list* ll = malloc(sizeof(struct linked_list));
+        ll->val = malloc(STRING_BUFF * sizeof(char));
+        ll->next = NULL;
+        strcpy(ll->val, ll_val);
+        return ll;
+    }
+
 }
 
 struct basic_cmd_struct* make_basic_cmd(char* cmd, struct linked_list* arguments) {
@@ -335,4 +354,98 @@ void redirect_std_err_to_file(char *file) {
             }
         }
     }
+}
+
+struct match_files* get_matching(const char* pattern) {
+    int p[2];
+    if (pipe(p) == -1) {
+        printf("Error opening pipe\n");
+        return NULL;
+    }
+    
+    if (fork() == 0) {
+        dup2(p[1], STDOUT_FILENO);
+        close(p[0]);
+        close(p[1]);
+        char *args[] = { "/bin/ls", NULL };
+        execv(args[0], args);
+    }
+    
+    wait(NULL);
+    close(p[1]);
+    char c[STRING_BUFF];
+    read(p[0], c, STRING_BUFF * sizeof(char));
+    int num_lines = 0;
+    for (int i = 0; i < STRING_BUFF && c[i] != '\0'; i++) {
+        if (c[i] == '\n') {
+            num_lines++;
+        }
+    }
+    
+    char **results = malloc(sizeof(char*) * num_lines);
+    char *p1 = c;
+    char *p2 = c;
+    int j = 0;
+    for (int i = 0; i < STRING_BUFF && *p1 != '\0'; i++) {
+        if (*p2 == '\n') {
+            results[j] = malloc(100 * sizeof(char));
+            strncpy(results[j], p1, p2-p1);
+            results[j][p2-p1] = '\0';
+            j++;
+            p1 = p2 + 1;
+        }
+        p2++;
+    }
+    
+    int matches[200];
+    for (int i = 0; i < 200; i++) {
+        matches[i] = -1;
+    }
+    int k = 0;
+    for (int i = 0; i < num_lines; i++) {
+        if (fnmatch(pattern, results[i], 0) == 0) {
+            matches[k] = i;
+            k++;
+        }
+    }
+    
+    int count_matches = 0;
+    for(int i= 0; i < 200; i++) {
+        if (matches[i] == -1) {
+            break;
+        }
+        count_matches++;
+    }
+    
+    struct match_files *result = malloc(sizeof(struct match_files));
+    result->num = count_matches;
+    result->files = malloc(sizeof(char*) * count_matches);
+    for (int i = 0; i < count_matches; i++) {
+        result->files[i] = malloc(200 * sizeof(char));
+        strcpy(result->files[i], results[matches[i]]);
+    }
+    
+    for (int i = 0; i < j; i++) {
+        free(results[i]);
+    }
+    
+    close(p[0]);
+    return result;
+}
+
+int has_pattern(const char *arg) {
+    int size = (int)strlen(arg);
+    for (int j = 0; j < size; j++) {
+        if (arg[j] == '*' || arg[j] == '?') {
+            return 0;
+        }
+    }
+    return -1;
+}
+
+void free_match_files(struct match_files* matches) {
+    for (int i = 0; i < matches->num; i++) {
+        free(matches->files[i]);
+    }
+    free(matches);
 }
