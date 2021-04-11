@@ -296,6 +296,10 @@ int runSetEnv(const char* var, const char* val) {
 }
 
 int runUnSetEnv(const char *name) {
+    if (strcmp(name, varTable.var[1]) == 0 || strcmp(name, varTable.var[3]) == 0) {
+        printf("Unsetting (%s) is not allowed\n", name);
+        return 1;
+    }
     char *currName;
     int currIndex = 0;
     int foundFlag = 0;
