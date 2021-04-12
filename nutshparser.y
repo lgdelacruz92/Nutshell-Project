@@ -18,10 +18,10 @@ int get_var_index(const char* var);
 int get_alias_index(const char* var);
 int check_loop(const char *var, char **visited, int visited_index);
 int runCD(char* arg);
-int runPrintEnv();
+int runPrintEnv(struct fileout_struct* fileout);
 int runSetEnv(const char* var, const char* val);
 int runUnSetEnv(const char* name);
-int runPrintAlias();
+int runPrintAlias(struct fileout_struct* fileout);
 int runSetAlias(char* name, char* word);
 int runUnAlias(const char* name);
 int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_struct* fileout, char* err_file, int background);
@@ -49,12 +49,12 @@ int runCmdList(struct basic_cmd_linkedlist* top, char* filein, struct fileout_st
 %%
 cmd_line    :
 	| BYE END 		                                           {exit(1); return 1; }
-    | PRINTENV END                                             {runPrintEnv(); return 1;}
+    | PRINTENV fileout END                                     {runPrintEnv($2); return 1;}
     | SETENV STRING STRING END                                 {runSetEnv($2, $3); return 1;}
     | UNSETENV STRING END                                      {runUnSetEnv($2); return 1;}
 	| UNALIAS STRING END                                       {runUnAlias($2); return 1;}
     | CD STRING END        			                           {runCD($2); return 1;}
-    | ALIAS END                                                {runPrintAlias(); return 1;}
+    | ALIAS fileout END                                        {runPrintAlias($2); return 1;}
     | ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
     | pipe_list filein fileout fileerr background END          {runCmdList($1, $2, $3, $4, $5); return 1;}
 
@@ -189,7 +189,28 @@ int runSetAlias(char *name, char *word) {
 	return 1;
 }
 
-int runPrintAlias() {
+int runPrintAlias(struct fileout_struct* fileout) {
+ 
+    if (fileout != NULL) {
+        char *mode = "w";
+        if (fileout->type == APPEND) {
+            mode = "a";
+        }
+        FILE *fptr;
+        fptr = fopen(fileout->filename, mode);
+        if (fptr == NULL) {
+            printf("Failed to open file (%s)\n", fileout->filename);
+            return -1;
+        }
+        for (int i = 0; i < aliasIndex; i++) {
+            fputs(aliasTable.name[i], fptr);
+            fputs("=", fptr);
+            fputs(aliasTable.word[i], fptr);
+            fputs("\n", fptr);
+        }        
+        fclose(fptr);
+        return 0;
+    }
     char *name;
     char *word;
     for (int i = 0; i < aliasIndex; i++) {
@@ -198,6 +219,7 @@ int runPrintAlias() {
         printf("%s=", name);
         printf("%s\n", word);
     }
+
     return 0;
 }
 
@@ -259,7 +281,29 @@ int runCmdList(struct basic_cmd_linkedlist* top, char *filein, struct fileout_st
     return 0;
 }
 
-int runPrintEnv() {
+int runPrintEnv(struct fileout_struct* fileout) {
+    int p[2];
+    if (pipe(p) < 0) {
+        printf("Error opening pipe\n");
+        return -1;
+    }
+
+    if (fileout != NULL) {
+        char *mode = "w";
+        if (fileout->type == APPEND) {
+            mode = "a";
+        }
+        FILE *fptr;
+        fptr = fopen(fileout->filename, mode);
+        for (int i = 0; i < varIndex; i++) {
+            fputs(varTable.var[i], fptr);
+            fputs("=", fptr);
+            fputs(varTable.word[i], fptr);
+            fputs("\n", fptr);
+        }
+        fclose(fptr);
+        return 0;
+    }
     char *name;
     char *word;
     for (int i = 0; i < varIndex; i++) {
