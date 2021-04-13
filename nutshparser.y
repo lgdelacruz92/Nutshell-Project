@@ -1,8 +1,4 @@
 %{
-// This is ONLY a demo micro-shell whose purpose is to illustrate the need for and how to handle nested alias substitutions and Flex start conditions.
-// This is to help students learn these specific capabilities, the code is by far not a complete nutshell by any means.
-// Only "alias name word", "cd word", and "bye" run. 
-
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,10 +104,18 @@ int yyerror(char *s) {
 
 int runCD(char* arg) {
 	if (arg[0] != '/') { // arg is relative path
-		strcat(varTable.word[0], "/");
-		strcat(varTable.word[0], arg);
+        char newPathArr[100];
+        char* newPath = newPathArr;
+        newPath = strdup(varTable.word[0]);
+		//strcat(varTable.word[0], "/");
+		//strcat(varTable.word[0], arg);
+        strcat(newPath, "/");
+        strcat(newPath, arg);
 
-		if(chdir(varTable.word[0]) == 0) {
+		//if(chdir(varTable.word[0]) == 0) {
+        if(chdir(newPath) == 0) {
+            strcat(varTable.word[0], "/");
+            strcat(varTable.word[0], arg);
 			strcpy(aliasTable.word[0], varTable.word[0]);
 			strcpy(aliasTable.word[1], varTable.word[0]);
 			char *pointer = strrchr(aliasTable.word[1], '/');
@@ -160,7 +164,7 @@ int runSetAlias(char *name, char *word) {
     }
 
     for (int i = 0; i < aliasIndex; i++) {
-        printf("(%s) = (%s)\n", aliasTable.name[i], aliasTable.word[i]);
+        //printf("(%s) = (%s)\n", aliasTable.name[i], aliasTable.word[i]);
     }
 
     // If there is a loop undo and print err
@@ -202,7 +206,7 @@ int runPrintAlias(struct fileout_struct* fileout) {
             printf("Failed to open file (%s)\n", fileout->filename);
             return -1;
         }
-        for (int i = 0; i < aliasIndex; i++) {
+        for (int i = 2; i < aliasIndex; i++) {
             fputs(aliasTable.name[i], fptr);
             fputs("=", fptr);
             fputs(aliasTable.word[i], fptr);

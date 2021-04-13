@@ -1,7 +1,4 @@
 %{
-// This is ONLY a demo micro-shell whose purpose is to illustrate the need for and how to handle nested alias substitutions and how to use Flex start conditions
-// This is to help students learn these specific capabilities, the code is by far not a complete nutshell by any means.
-// Only "alias name word", "cd word", and "bye" run. 
 #include "nutshparser.tab.h"
 #include <string.h>
 #include "global.h"
@@ -84,7 +81,7 @@ unsetenv              { return UNSETENV; }
 "&"                   { return BACKGROUND_RUN; }
 "${"{CHAR}+"}"        { int varI = findVar(yytext);
                         if (varI != -1) {
-                            printf("yytext before sub: %s\n", yytext);
+                            //printf("yytext before sub: %s\n", yytext);
                             yylval.string = strdup(varTable.word[varI]);
                             return STRING;
                         }
@@ -95,7 +92,7 @@ unsetenv              { return UNSETENV; }
                       }
 {CHAR}+               {
                         if(call_count == 1 && ifAlias(yytext)) {
-                            printf("yytext before sub: %s\n", yytext);
+                            //printf("yytext before sub: %s\n", yytext);
                             // source: https://www.cs.princeton.edu/~appel/modern/c/software/flex/flex.html
                             char *yycopy = strdup( subAliases(yytext) );
                             for ( int i = strlen(subAliases(yytext)) - 1; i >= 0; --i )
@@ -103,7 +100,7 @@ unsetenv              { return UNSETENV; }
                             free( yycopy );
                         } else {
                             BEGIN(INITIAL);
-                            printf("yytext: %s\n", yytext);
+                            //printf("yytext: %s\n", yytext);
                             yylval.string = strdup(yytext);
                             return STRING;
                         };
