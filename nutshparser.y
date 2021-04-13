@@ -218,7 +218,7 @@ int runPrintAlias(struct fileout_struct* fileout) {
     }
     char *name;
     char *word;
-    for (int i = 0; i < aliasIndex; i++) {
+    for (int i = 2; i < aliasIndex; i++) {
         name = aliasTable.name[i];
         word = aliasTable.word[i];
         printf("%s=", name);
