@@ -49,6 +49,7 @@ cmd_line    :
     | SETENV STRING STRING END                                 {runSetEnv($2, $3); return 1;}
     | UNSETENV STRING END                                      {runUnSetEnv($2); return 1;}
 	| UNALIAS STRING END                                       {runUnAlias($2); return 1;}
+    | CD                                                       {runCD(varTable.word[1]); return 1;}
     | CD STRING END        			                           {runCD($2); return 1;}
     | ALIAS fileout END                                        {runPrintAlias($2); return 1;}
     | ALIAS STRING STRING END		                           {runSetAlias($2, $3); return 1;}
